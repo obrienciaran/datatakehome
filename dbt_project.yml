@@ -1,0 +1,20 @@
+name: nhs_ed_pipeline
+version: '1.0.0'
+
+profile: nhs_ed_pipeline
+
+model-paths: ["models"]
+test-paths: ["tests"]
+analysis-paths: ["analyses"]
+macro-paths: ["macros"]
+
+vars:
+  project_id: guys-nhs
+
+models:
+  nhs_ed_pipeline:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
+      +schema: marts
