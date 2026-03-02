@@ -1,0 +1,10 @@
+nhs_ed_pipeline:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: oauth
+      project: guys-nhs
+      dataset: staging
+      location: europe-west2
+      threads: 4

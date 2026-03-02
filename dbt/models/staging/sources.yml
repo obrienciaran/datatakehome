@@ -1,0 +1,212 @@
+version: 2
+
+sources:
+  - name: raw
+    database: "{{ var('project_id') }}"
+    schema: raw
+    description: Raw CSV data loaded into BigQuery from NHS EHR extract
+
+    tables:
+      - name: patients
+        description: Patient demographics
+        columns:
+          - name: Id
+            description: Unique patient identifier (UUID)
+          - name: BIRTHDATE
+            description: Patient date of birth
+          - name: DEATHDATE
+            description: Patient date of death (null if alive)
+          - name: SSN
+            description: Social security number
+          - name: DRIVERS
+            description: Drivers licence number
+          - name: PASSPORT
+            description: Passport number
+          - name: PREFIX
+            description: Name prefix (Mr., Mrs., etc.)
+          - name: FIRST
+            description: First name
+          - name: LAST
+            description: Last name
+          - name: SUFFIX
+            description: Name suffix
+          - name: MAIDEN
+            description: Maiden name
+          - name: MARITAL
+            description: Marital status
+          - name: RACE
+            description: Race
+          - name: ETHNICITY
+            description: Ethnicity
+          - name: GENDER
+            description: Gender (M/F)
+          - name: BIRTHPLACE
+            description: Place of birth
+          - name: ADDRESS
+            description: Street address
+          - name: CITY
+            description: City
+          - name: STATE
+            description: State
+          - name: COUNTY
+            description: County
+          - name: ZIP
+            description: ZIP/postal code
+          - name: LAT
+            description: Latitude of address
+          - name: LON
+            description: Longitude of address
+          - name: HEALTHCARE_EXPENSES
+            description: Total healthcare expenses
+          - name: HEALTHCARE_COVERAGE
+            description: Total healthcare coverage
+
+      - name: encounters
+        description: Encounter records from main EHR system
+        columns:
+          - name: Id
+            description: Unique encounter identifier (UUID)
+          - name: START
+            description: Encounter start timestamp
+          - name: STOP
+            description: Encounter stop timestamp
+          - name: PATIENT
+            description: Foreign key to patients
+          - name: ORGANIZATION
+            description: Organisation identifier
+          - name: PROVIDER
+            description: Provider identifier
+          - name: PAYER
+            description: Payer identifier
+          - name: ENCOUNTERCLASS
+            description: Type of encounter (emergency, inpatient, outpatient, etc.)
+          - name: CODE
+            description: Encounter SNOMED code
+          - name: DESCRIPTION
+            description: Encounter description
+          - name: BASE_ENCOUNTER_COST
+            description: Base cost of encounter
+          - name: TOTAL_CLAIM_COST
+            description: Total claim cost
+          - name: PAYER_COVERAGE
+            description: Amount covered by payer
+          - name: REASONCODE
+            description: SNOMED code for reason of encounter
+          - name: REASONDESCRIPTION
+            description: Description of reason for encounter
+
+      - name: encounters_schema_change_batch
+        description: Encounters from a second source system with different schema (epoch timestamps, renamed columns)
+        columns:
+          - name: Id
+            description: Unique encounter identifier (UUID)
+          - name: PATIENT
+            description: Foreign key to patients
+          - name: ENCOUNTER_TYPE
+            description: Type of encounter (maps to ENCOUNTERCLASS in main encounters)
+          - name: CODE
+            description: Encounter SNOMED code
+          - name: DESCRIPTION
+            description: Encounter description
+          - name: START
+            description: Encounter start as epoch milliseconds
+          - name: STOP
+            description: Encounter stop as epoch milliseconds
+          - name: ORGANIZATION
+            description: Organisation identifier
+          - name: PROVIDER
+            description: Provider identifier
+          - name: PAYER
+            description: Payer identifier
+          - name: BASE_ENCOUNTER_COST
+            description: Base cost of encounter
+          - name: TOTAL_CLAIM_COST
+            description: Total claim cost
+          - name: PAYER_COVERAGE
+            description: Amount covered by payer
+          - name: REASONCODE
+            description: SNOMED code for reason of encounter
+          - name: REASONDESCRIPTION
+            description: Description of reason for encounter
+          - name: SOURCE_SYSTEM
+            description: Originating source system (EPIC_PROD, CERNER_LEGACY)
+
+      - name: conditions
+        description: Patient conditions and diagnoses
+        columns:
+          - name: START
+            description: Condition onset date
+          - name: STOP
+            description: Condition resolution date
+          - name: PATIENT
+            description: Foreign key to patients
+          - name: ENCOUNTER
+            description: Foreign key to encounters
+          - name: CODE
+            description: SNOMED condition code
+          - name: DESCRIPTION
+            description: Condition description
+
+      - name: observations
+        description: Clinical observations including vitals and lab results
+        columns:
+          - name: DATE
+            description: Observation datetime
+          - name: PATIENT
+            description: Foreign key to patients
+          - name: ENCOUNTER
+            description: Foreign key to encounters
+          - name: CODE
+            description: LOINC observation code
+          - name: DESCRIPTION
+            description: Observation description
+          - name: VALUE
+            description: Observation value (mixed types)
+          - name: UNITS
+            description: Unit of measurement
+          - name: TYPE
+            description: Observation type (numeric, text)
+
+      - name: medications
+        description: Medication prescriptions
+        columns:
+          - name: START
+            description: Medication start timestamp
+          - name: STOP
+            description: Medication stop timestamp
+          - name: PATIENT
+            description: Foreign key to patients
+          - name: PAYER
+            description: Payer identifier
+          - name: ENCOUNTER
+            description: Foreign key to encounters
+          - name: CODE
+            description: RxNorm medication code
+          - name: DESCRIPTION
+            description: Medication description
+          - name: BASE_COST
+            description: Base cost per unit
+          - name: PAYER_COVERAGE
+            description: Amount covered by payer
+          - name: DISPENSES
+            description: Number of dispenses
+          - name: TOTALCOST
+            description: Total medication cost
+          - name: REASONCODE
+            description: SNOMED code for reason prescribed
+          - name: REASONDESCRIPTION
+            description: Description of reason prescribed
+
+      - name: clinical_notes
+        description: Free-text ED triage notes
+        columns:
+          - name: ENCOUNTER_ID
+            description: Foreign key to encounters
+          - name: PATIENT_ID
+            description: Foreign key to patients
+          - name: NOTE_DATETIME
+            description: Datetime the note was recorded
+          - name: NOTE_TYPE
+            description: Type of clinical note
+          - name: NOTE_TEXT
+            description: Free-text note content
