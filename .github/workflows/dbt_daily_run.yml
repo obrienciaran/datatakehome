@@ -8,13 +8,12 @@ on:
 
 env:
   DBT_PROJECT_DIR: dbt
+  DBT_IMAGE: ghcr.io/${{ github.repository }}/dbt-runner:latest
 
 jobs:
   dbt-run:
     name: dbt production run
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository }}/dbt-runner:latest
 
     steps:
       - uses: actions/checkout@v4
@@ -24,9 +23,8 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Install dbt packages
-        working-directory: ${{ env.DBT_PROJECT_DIR }}
-        run: dbt deps
+      - name: Pull dbt-runner image
+        run: docker pull "$DBT_IMAGE"
 
       - name: Write production profiles.yml
         working-directory: ${{ env.DBT_PROJECT_DIR }}
@@ -50,10 +48,26 @@ jobs:
       - name: Check source freshness
         run: python scripts/check_source_freshness.py
 
+      - name: dbt deps
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/dbt:/app" \
+            -v "$GOOGLE_APPLICATION_CREDENTIALS:$GOOGLE_APPLICATION_CREDENTIALS:ro" \
+            -e GOOGLE_APPLICATION_CREDENTIALS \
+            "$DBT_IMAGE" deps
+
       - name: dbt source freshness
-        working-directory: ${{ env.DBT_PROJECT_DIR }}
-        run: dbt source freshness
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/dbt:/app" \
+            -v "$GOOGLE_APPLICATION_CREDENTIALS:$GOOGLE_APPLICATION_CREDENTIALS:ro" \
+            -e GOOGLE_APPLICATION_CREDENTIALS \
+            "$DBT_IMAGE" source freshness
 
       - name: dbt build (run + test)
-        working-directory: ${{ env.DBT_PROJECT_DIR }}
-        run: dbt build
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/dbt:/app" \
+            -v "$GOOGLE_APPLICATION_CREDENTIALS:$GOOGLE_APPLICATION_CREDENTIALS:ro" \
+            -e GOOGLE_APPLICATION_CREDENTIALS \
+            "$DBT_IMAGE" build
