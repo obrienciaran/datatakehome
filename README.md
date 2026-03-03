@@ -8,7 +8,9 @@ Examine `load`. Data is loaded from the repo and uploaded to Big Query using Pyt
 
 ### Part B Data Assessment
 
-Examine `dbt`. The raw data is used as a `source` for dbt and loaded from the repo. Some simple cleaning is applied in the `staging` layer. Two `mart` layer tables as requested in Part C are created.
+See [`notebooks/readme.md`](notebooks/readme.md) for the written answers to `B1` and `B2`, and [`notebooks/data_quality_assessment.ipynb`](notebooks/data_quality_assessment.ipynb) for the full exploratory analysis
+
+Examine `dbt`. The raw data is used as a `source` for dbt and loaded from the repo. Some simple cleaning is applied in the `staging` layer. Two `mart` layer tables as requested in Part C are created. Table level and column level documentation has been added. Column level tests have been added.
 
 The daily production run is containerised in Docker for reproducibility. A pinned image ensures the dbt version and dependencies are consistent across every run. The image is built and pushed to GitHub Container Registry (GHCR) automatically when the `Dockerfile` or `requirements.txt` changes on `main`, and is pulled at runtime each morning at 06:00 with a cronjob in a Github action. Note that the CI pipeline installs dbt directly via pip and does not use Docker. A GitHub secret was created for the service account with `BigQuery Data Editor` and `BigQuery Job User` roles, which are the minimum permissions required for dbt to operate. `BigQuery Job User` allows the service account to execute queries, while `BigQuery Data Editor` allows it to create and write to tables. This follows the principle of least privilege, avoiding broader roles such as `BigQuery Admin`.
 
@@ -28,10 +30,6 @@ A scheduled GitHub Actions run fires at 06:00 UTC each morning. Before `dbt buil
 <img width="1519" height="843" alt="Screenshot 2026-03-03 at 17 18 14" src="https://github.com/user-attachments/assets/bfa055d4-a1db-4063-b9fd-6c86efaa9289" />
 
 *Note: correctly failing due to data being very old and failing freshness tests.*
-
-Table level and column level documentation has been added. Column level tests have been added.
-
-See [`notebooks/readme.md`](notebooks/readme.md) for the written answers to `B1` and `B2`, and [`notebooks/data_quality_assessment.ipynb`](notebooks/data_quality_assessment.ipynb) for the full exploratory analysis
 
 ### Part C Transformation Pipeline
 
