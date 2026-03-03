@@ -1,4 +1,22 @@
-"""Load raw CSV files into BigQuery `raw` dataset."""
+"""Load raw CSV files into BigQuery `raw` dataset.
+
+Usage:
+    python load_to_bigquery.py [--project PROJECT_ID]
+
+Arguments:
+    --project GCP project ID (default: guys-nhs)
+
+Examples:
+    # Run with the default project
+    python load_to_bigquery.py
+
+    # Run with a specific project
+    python load_to_bigquery.py --project my-gcp-project
+
+Requirements:
+    Authenticate with Google Cloud before running:
+        gcloud auth application-default login
+"""
 
 import argparse
 from pathlib import Path

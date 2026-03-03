@@ -163,7 +163,7 @@ python scripts/check_source_freshness.py # verifies source data is recent enough
 **During `dbt build` (built into the dbt run):**
 
 ```bash
-dbt build       # runs models + tests in dependency order
+dbt build # runs models + tests in dependency order
 ```
 
 - `on-run-start`: `check_source_tables_exist()` — blocks the run if any source table is missing
@@ -178,3 +178,5 @@ These run in the `dbt CI` GitHub Action when a PR touches `dbt/**`:
 dbt parse # validates SQL compiles (no credentials needed)
 dbt build # runs models + tests against an ephemeral CI dataset
 ```
+
+To keep CI fast and cost-effective, the built-in `source()` macro is overridden in `macros/ci_limit.sql` to apply `TABLESAMPLE SYSTEM (1 PERCENT)` on all raw source tables when `target == ci`. Staging models require no changes — the sampling is applied transparently.
