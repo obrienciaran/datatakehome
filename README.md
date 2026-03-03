@@ -14,7 +14,7 @@ The DBT run is contained in Docker for reproducibility and safety, and ran daily
 
 Table level and column level documentation has been added. Column level tests have been added.
 
-See `notebooks/data_quality_assessment.ipynb` for the details of `B1` and `B2`
+See [`notebooks/readme.md`](notebooks/readme.md) for the written answers to `B1` and `B2`, and [`notebooks/data_quality_assessment.ipynb`](notebooks/data_quality_assessment.ipynb) for the full exploratory analysis
 
 ### Part C Transformation Pipeline
 
