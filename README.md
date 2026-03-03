@@ -1,4 +1,4 @@
-# 🤖 Data Engineering — Ciaran O'Brien - Assessment
+# 🤖 Data Engineering - Ciaran O'Brien - Assessment
 
 Claude was used as a coding assistant throughout this project. All infrastructure and architectural decisions were my own, all code was reviewed by me, and all data was reviewed and validated by me. Back end changes in the Google Cloud Platform website were done by me when needed.
 
