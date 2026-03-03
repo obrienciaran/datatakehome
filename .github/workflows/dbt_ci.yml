@@ -1,8 +1,9 @@
 # Runs on every pull request that touches the dbt directory.
 # Two jobs run in sequence:
-#   1. dbt-lint  – fast compile check to catch syntax errors without needing GCP credentials
-#   2. dbt-build – full build and test against an isolated CI BigQuery dataset, torn down afterwards
+# 1. dbt-lint  – fast compile check to catch syntax errors without needing GCP credentials
+# 2. dbt-build – full build and test against an isolated CI BigQuery dataset, torn down afterwards
 # The isolated dataset (ci_pr_<number>) means CI runs can't interfere with production.
+# Both jobs use the same dbt-runner Docker image as production for environment consistency.
 name: dbt CI
 
 on:
@@ -10,34 +11,47 @@ on:
     paths:
       - "dbt/**"
 
+env:
+  DBT_IMAGE: ghcr.io/${{ github.repository }}/dbt-runner:latest
+
 jobs:
   # Fast first gate: parse and compile all models without running them.
   # No GCP credentials needed, so this catches syntax errors cheaply.
   dbt-lint:
     name: dbt compile check
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: dbt
+
+    permissions:
+      contents: read
+      packages: read # needed to pull the dbt-runner image from ghcr.io
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      # Authenticate with GHCR so we can pull the private dbt-runner image
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
-          python-version: "3.11"
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install dbt
-        run: pip install dbt-core dbt-bigquery
-        working-directory: .
+      - name: Pull dbt-runner image
+        run: docker pull "$DBT_IMAGE"
 
       # Install packages declared in packages.yml (e.g. dbt_utils)
-      - name: Install dbt packages
-        run: dbt deps --profiles-dir .
+      - name: dbt deps
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/dbt:/app" \
+            "$DBT_IMAGE" deps
 
       # Parse compiles the full project and validates all Jinja/SQL without connecting to BigQuery
       - name: dbt parse
-        run: dbt parse --profiles-dir .
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/dbt:/app" \
+            "$DBT_IMAGE" parse
 
   # Full build against an ephemeral BigQuery dataset scoped to this PR number.
   # Only runs if the compile check passes.
@@ -45,23 +59,24 @@ jobs:
     name: dbt build & test
     needs: dbt-lint
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: dbt
+
+    permissions:
+      contents: read
+      packages: read # needed to pull the dbt-runner image from ghcr.io
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      # Authenticate with GHCR so we can pull the private dbt-runner image
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
-          python-version: "3.11"
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install dbt
-        run: pip install dbt-core dbt-bigquery
-        working-directory: .
-
-      - name: Install dbt packages
-        run: dbt deps --profiles-dir .
+      - name: Pull dbt-runner image
+        run: docker pull "$DBT_IMAGE"
 
       # Authenticate with GCP so dbt can create tables in the CI dataset
       - name: Authenticate to Google Cloud
@@ -72,6 +87,7 @@ jobs:
       # Write a CI profiles.yml pointing at an isolated dataset for this PR.
       # Using the PR number keeps concurrent CI runs from colliding with each other.
       - name: Write CI profiles.yml
+        working-directory: dbt
         run: |
           cat > profiles.yml <<'YAML'
           nhs_ed_pipeline:
@@ -86,13 +102,26 @@ jobs:
                 threads: 4
           YAML
 
+      # Install packages declared in packages.yml (e.g. dbt_utils)
+      - name: dbt deps
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/dbt:/app" \
+            -v "$GOOGLE_APPLICATION_CREDENTIALS:$GOOGLE_APPLICATION_CREDENTIALS:ro" \
+            -e GOOGLE_APPLICATION_CREDENTIALS \
+            "$DBT_IMAGE" deps
+
       # Run all models and tests against the ephemeral CI dataset
       - name: dbt build (run + test)
-        run: dbt build --profiles-dir .
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/dbt:/app" \
+            -v "$GOOGLE_APPLICATION_CREDENTIALS:$GOOGLE_APPLICATION_CREDENTIALS:ro" \
+            -e GOOGLE_APPLICATION_CREDENTIALS \
+            "$DBT_IMAGE" build
 
       # Always clean up the CI dataset, even if the build step failed
       - name: Tear down CI dataset
         if: always()
-        working-directory: .
         run: |
           bq rm -r -f "guys-nhs:ci_pr_${{ github.event.pull_request.number }}" || true
