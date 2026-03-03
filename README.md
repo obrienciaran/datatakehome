@@ -12,9 +12,13 @@ Examine `dbt`. The raw data is used as a `source` for dbt and loaded from the re
 
 The daily production run is containerised in Docker for reproducibility. A pinned image ensures the dbt version and dependencies are consistent across every run. The image is built and pushed to GitHub Container Registry (GHCR) automatically when the `Dockerfile` or `requirements.txt` changes on `main`, and is pulled at runtime each morning at 06:00 with a cronjob in a Github action. Note that the CI pipeline installs dbt directly via pip and does not use Docker. A GitHub secret was created with `BigQuery Data Editor` and `BigQuery Job User` roles.
 
-**CI on pull requests:** Any PR touching `dbt/**` triggers two jobs. First, `dbt parse` runs as a compile check to catch syntax errors early. If that passes, `dbt build` (models + tests) runs against an isolated, ephemeral BigQuery dataset named after the PR number (e.g. `ci_pr_42`). To keep CI fast and cost-effective as the pipeline scales, the built-in dbt `source()` macro is overridden to apply `TABLESAMPLE SYSTEM (1 PERCENT)` when `target == ci` — giving a representative random sample transparently, without any changes needed in the staging models themselves. The dataset is torn down once the job completes, regardless of outcome. This ensures broken models and failing tests are caught before merging.
+**CI on pull requests:** 
 
-**Daily cron job:** A scheduled run fires at 06:00 UTC each morning. Before `dbt build` can run, two Python pre-flight scripts check that source data has arrived and is fresh, and `dbt source freshness` is also run. Only once all checks pass does `dbt build` execute. This satisfies C1 and C2 in `Part C`, see [here](https://github.com/obrienciaran/datatakehome/tree/main/dbt).
+Any PR touching `dbt/**` triggers two jobs. First, `dbt parse` runs as a compile check to catch syntax errors early. If that passes, `dbt build` (models + tests) runs against an isolated, ephemeral BigQuery dataset named after the PR number (e.g. `ci_pr_42`). To keep CI fast and cost-effective as the pipeline scales, the built-in dbt `source()` macro is overridden to apply `TABLESAMPLE SYSTEM (1 PERCENT)` when `target == ci` — giving a representative random sample transparently, without any changes needed in the staging models themselves. The dataset is torn down once the job completes, regardless of outcome. This ensures broken models and failing tests are caught before merging.
+
+**Daily cron job:** 
+
+A scheduled run fires at 06:00 UTC each morning. Before `dbt build` can run, two Python pre-flight scripts check that source data has arrived and is fresh, and `dbt source freshness` is also run. Only once all checks pass does `dbt build` execute. This satisfies C1 and C2 in `Part C`, see [here](https://github.com/obrienciaran/datatakehome/tree/main/dbt).
 
 Table level and column level documentation has been added. Column level tests have been added.
 
