@@ -63,6 +63,10 @@ sources:
 
       - name: encounters
         description: Encounter records from main EHR system
+        loaded_at_field: "CAST(START AS TIMESTAMP)"
+        freshness:
+          warn_after: {count: 48, period: hour}
+          error_after: {count: 168, period: hour}
         columns:
           - name: Id
             description: Unique encounter identifier (UUID)

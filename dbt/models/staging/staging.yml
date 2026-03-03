@@ -2,28 +2,78 @@ version: 2
 
 models:
   - name: stg_patients
-    description: Cleaned patient demographics
+    description: >
+      Patient demographics.
     columns:
       - name: patient_id
-        description: Unique patient identifier
+        description: Unique patient identifier (UUID)
         tests:
           - unique
           - not_null
+      - name: birth_date
+        description: Patient date of birth
+      - name: death_date
+        description: Patient date of death (null if alive)
+      - name: ssn
+        description: Social security number
+      - name: drivers_licence
+        description: Drivers licence number
+      - name: passport_number
+        description: Passport number
+      - name: name_prefix
+        description: Name prefix (Mr., Mrs., etc.)
+      - name: first_name
+        description: Patient first name
+      - name: last_name
+        description: Patient last name
+      - name: name_suffix
+        description: Name suffix
+      - name: maiden_name
+        description: Maiden name
+      - name: marital_status
+        description: Marital status
+      - name: race
+        description: Race
+      - name: ethnicity
+        description: Ethnicity
+      - name: gender
+        description: Gender (M/F)
+      - name: birth_place
+        description: Place of birth
+      - name: address
+        description: Street address
+      - name: city
+        description: City
+      - name: state
+        description: State
+      - name: county
+        description: County
+      - name: zip_code
+        description: ZIP/postal code
+      - name: latitude
+        description: Latitude of patient address
+      - name: longitude
+        description: Longitude of patient address
+      - name: healthcare_expenses
+        description: Total healthcare expenses
+      - name: healthcare_coverage
+        description: Total healthcare coverage
 
   - name: stg_encounters
-    description: Unified encounters from main system and schema-change batch
+    description: >
+      All encounter records (not just ED)
     columns:
       - name: encounter_id
-        description: Unique encounter identifier
+        description: Unique encounter identifier (UUID)
         tests:
           - unique
           - not_null
       - name: patient_id
-        description: Foreign key to patients
+        description: Foreign key to stg_patients
         tests:
           - not_null
       - name: encounter_class
-        description: Type of encounter
+        description: Type of encounter (emergency, inpatient, outpatient, etc.)
         tests:
           - not_null
           - accepted_values:
@@ -35,9 +85,32 @@ models:
                   - ambulatory
                   - wellness
                   - urgentcare
+      - name: encounter_code
+        description: SNOMED code for the encounter
+      - name: encounter_description
+        description: Free-text description of the encounter
       - name: encounter_start
+        description: Encounter start timestamp
         tests:
           - not_null
+      - name: encounter_stop
+        description: Encounter stop timestamp
+      - name: organization_id
+        description: Organisation identifier
+      - name: provider_id
+        description: Provider identifier
+      - name: payer_id
+        description: Payer identifier
+      - name: base_encounter_cost
+        description: Base cost of the encounter
+      - name: total_claim_cost
+        description: Total claim cost
+      - name: payer_coverage
+        description: Amount covered by payer
+      - name: reason_code
+        description: SNOMED code for reason of encounter
+      - name: reason_description
+        description: Description of reason for encounter
       - name: source_system
         description: Provenance tracking — MAIN, EPIC_PROD, or CERNER_LEGACY
         tests:
@@ -49,61 +122,149 @@ models:
                   - CERNER_LEGACY
 
   - name: stg_encounters_schema_change_batch
-    description: Transformed schema-change batch encounters (consumed by stg_encounters)
+    description: >
+      A batch of encounters from a second source system with a different schema.
     columns:
       - name: encounter_id
+        description: Unique encounter identifier (UUID)
         tests:
           - unique
           - not_null
       - name: patient_id
+        description: Foreign key to stg_patients
         tests:
           - not_null
+      - name: encounter_class
+        description: Type of encounter, lowercased from ENCOUNTER_TYPE
+      - name: encounter_code
+        description: SNOMED code for the encounter
+      - name: encounter_description
+        description: Free-text description of the encounter
+      - name: encounter_start
+        description: Encounter start timestamp (converted from epoch milliseconds)
+      - name: encounter_stop
+        description: Encounter stop timestamp (converted from epoch milliseconds)
+      - name: organization_id
+        description: Organisation identifier
+      - name: provider_id
+        description: Provider identifier
+      - name: payer_id
+        description: Payer identifier
+      - name: base_encounter_cost
+        description: Base cost of the encounter
+      - name: total_claim_cost
+        description: Total claim cost
+      - name: payer_coverage
+        description: Amount covered by payer
+      - name: reason_code
+        description: SNOMED code for reason of encounter
+      - name: reason_description
+        description: Description of reason for encounter
+      - name: source_system
+        description: Originating source system (EPIC_PROD or CERNER_LEGACY)
 
   - name: stg_conditions
-    description: Patient conditions and diagnoses
+    description: >
+      Patient conditions / diagnoses
     columns:
       - name: patient_id
+        description: Foreign key to stg_patients
         tests:
           - not_null
       - name: encounter_id
+        description: Foreign key to stg_encounters
         tests:
           - not_null
       - name: condition_code
+        description: SNOMED condition code
         tests:
           - not_null
+      - name: condition_description
+        description: Human-readable condition description
+      - name: condition_start
+        description: Condition onset date
+      - name: condition_stop
+        description: Condition resolution date (null if ongoing)
 
   - name: stg_observations
-    description: Clinical observations (vitals, lab results)
+    description: >
+      Clinical observations (vitals, lab results)
     columns:
+      - name: observation_date
+        description: Observation datetime
       - name: patient_id
+        description: Foreign key to stg_patients
         tests:
           - not_null
       - name: encounter_id
+        description: Foreign key to stg_encounters
         tests:
           - not_null
       - name: observation_code
+        description: LOINC observation code
         tests:
           - not_null
+      - name: observation_description
+        description: Human-readable observation description
+      - name: observation_value
+        description: Observation value (cast to string; mixed types)
+      - name: observation_units
+        description: Unit of measurement
+      - name: observation_type
+        description: Observation type (numeric, text)
 
   - name: stg_medications
-    description: Medication prescriptions
+    description: >
+      Medication prescriptions
     columns:
+      - name: medication_start
+        description: Medication start timestamp
+      - name: medication_stop
+        description: Medication stop timestamp
       - name: patient_id
+        description: Foreign key to stg_patients
         tests:
           - not_null
+      - name: payer_id
+        description: Payer identifier
       - name: encounter_id
+        description: Foreign key to stg_encounters
         tests:
           - not_null
       - name: medication_code
+        description: RxNorm medication code
         tests:
           - not_null
+      - name: medication_description
+        description: Human-readable medication description
+      - name: base_cost
+        description: Base cost per unit
+      - name: payer_coverage
+        description: Amount covered by payer
+      - name: dispenses
+        description: Number of dispenses
+      - name: total_cost
+        description: Total medication cost
+      - name: reason_code
+        description: SNOMED code for reason prescribed
+      - name: reason_description
+        description: Description of reason prescribed
 
   - name: stg_clinical_notes
-    description: Free-text ED triage notes
+    description: >
+      Free-text ED triage notes
     columns:
       - name: encounter_id
+        description: Foreign key to stg_encounters
         tests:
           - not_null
       - name: patient_id
+        description: Foreign key to stg_patients
         tests:
           - not_null
+      - name: note_datetime
+        description: Datetime the note was recorded
+      - name: note_type
+        description: Type of clinical note
+      - name: note_text
+        description: Free-text note content

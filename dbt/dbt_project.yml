@@ -11,10 +11,16 @@ macro-paths: ["macros"]
 vars:
   project_id: guys-nhs
 
+on-run-start:
+  - "{{ check_source_tables_exist() }}"
+
+on-run-end:
+  - "{{ validate_row_counts() }}"
+
 models:
   nhs_ed_pipeline:
     staging:
       +materialized: view
     marts:
       +materialized: table
-      +schema: marts
+      +schema: mart

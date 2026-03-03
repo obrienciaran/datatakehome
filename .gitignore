@@ -45,6 +45,12 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+# dbt
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+dbt/.user.yml
+
 # Environment
 .env
 .env.local

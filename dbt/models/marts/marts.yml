@@ -1,0 +1,81 @@
+version: 2
+
+models:
+  - name: length_of_stay
+    description: >
+      Encounter-grain table with length of stay in hours, broken down by
+      presenting condition (reason_code / reason_description). Excludes
+      encounters with no stop timestamp.
+    columns:
+      - name: encounter_id
+        description: Unique encounter identifier
+        tests:
+          - unique
+          - not_null
+      - name: patient_id
+        description: Foreign key to stg_patients
+        tests:
+          - not_null
+      - name: encounter_class
+        description: Type of encounter (emergency, inpatient, outpatient, etc.)
+        tests:
+          - not_null
+      - name: encounter_start
+        description: Encounter start timestamp
+        tests:
+          - not_null
+      - name: encounter_stop
+        description: Encounter stop timestamp
+        tests:
+          - not_null
+      - name: length_of_stay_hours
+        description: Length of stay in hours (minutes / 60)
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+              config:
+                severity: warn
+      - name: reason_code
+        description: SNOMED code for the presenting condition (may be null)
+      - name: reason_description
+        description: Description of the presenting condition (may be null)
+
+  - name: frequent_attenders
+    description: >
+      Encounter-grain table with a rolling 12-month visit count per patient.
+      Flags patients with 3+ visits in any rolling 365-day window as frequent
+      attenders. Joined to patient demographics.
+    columns:
+      - name: encounter_id
+        description: Unique encounter identifier
+        tests:
+          - unique
+          - not_null
+      - name: patient_id
+        description: Foreign key to stg_patients
+        tests:
+          - not_null
+      - name: first_name
+        description: Patient first name
+      - name: last_name
+        description: Patient last name
+      - name: gender
+        description: Patient gender
+      - name: birth_date
+        description: Patient date of birth
+      - name: encounter_class
+        description: Type of encounter
+      - name: encounter_start
+        description: Encounter start timestamp
+        tests:
+          - not_null
+      - name: visits_rolling_12m
+        description: Number of encounters in the 365-day window ending at this encounter
+        tests:
+          - not_null
+      - name: is_frequent_attender
+        description: True if visits_rolling_12m >= 3
+        tests:
+          - not_null
