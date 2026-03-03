@@ -16,7 +16,10 @@ The daily production run is containerised in Docker for reproducibility. A pinne
 
 Any PR touching `dbt/**` triggers two jobs. First, `dbt parse` runs as a compile check to catch syntax errors early. If that passes, `dbt build` (models + tests) runs against an isolated, ephemeral BigQuery dataset named after the PR number (e.g. `ci_pr_42`). To keep CI fast and cost-effective as the pipeline scales, the built-in dbt `source()` macro is overridden to apply `TABLESAMPLE SYSTEM (1 PERCENT)` when `target == ci` — giving a representative random sample transparently, without any changes needed in the staging models themselves. The dataset is torn down once the job completes, regardless of outcome. This ensures broken models and failing tests are caught before merging.
 
-<img width="980" height="160" alt="Screenshot 2026-03-03 at 17 00 02" src="https://github.com/user-attachments/assets/4f8782ce-9b14-47cf-abb3-d8cde4dbb4cb" />
+<img width="906" height="270" alt="Screenshot 2026-03-03 at 17 02 39" src="https://github.com/user-attachments/assets/b4d0c789-c4ba-4cbf-9f00-aa00ea80825b" />
+
+*Note: correctly failing due to data issues.*
+
 
 **Daily cron job:** 
 
