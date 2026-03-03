@@ -82,30 +82,18 @@ Running `dbt source freshness` will warn if the most recent encounter is older t
 dbt source freshness
 ```
 
-#### 3. Python pre-flight scripts: orchestrator integration with alerting
+#### 3. Python pre-flight script: orchestrator integration with alerting
 
-Two Python scripts run as gates in the GitHub Action before `dbt build`:
+The script `scripts/check_source_freshness.py` connects to BigQuery, checks for all expected tables, and if any are missing:
 
-**`scripts/check_source_arrival.py`** — verifies all expected source tables exist in BigQuery. If any are missing, it prints a mock Slack alert and exits with code 1, halting the workflow.
-
-```bash
-python scripts/check_source_arrival.py
-```
-
-**`scripts/check_source_freshness.py`** — queries the most recent timestamp in each source table and checks it against a staleness threshold (e.g., 168 hours / 7 days). If any table's data is too old, it prints a mock Slack alert and exits with code 1.
+- Prints a mock Slack alert with channel, timestamp, and missing table names
+- Exits with code 1, which an orchestrator (Airflow, cron) can use to halt the pipeline
 
 ```bash
 python scripts/check_source_freshness.py
 ```
 
-In the daily GitHub Action (`dbt_daily_run.yml`), these run in sequence before `dbt build`:
-
-1. `check_source_arrival.py` — are the tables there?
-2. `check_source_freshness.py` — is the data inside them recent?
-3. `dbt source freshness` — dbt's native freshness check
-4. `dbt build` — only runs if all of the above pass
-
-In production, the mock Slack alerts would be replaced by real webhook calls.
+In production, this would be an Airflow sensor or pre-task that gates the `dbt run` step, with the mock Slack alert replaced by a real webhook call.
 
 ---
 
@@ -122,11 +110,11 @@ A pipeline can complete with exit code 0 while producing incorrect results. Exam
 - Timestamp parsing goes wrong, producing wildly incorrect date calculations
 - A filter condition silently excludes all data
 
-These are the hardest failures to catch because everything *looks* fine from the pipeline's perspective.
+Everything looks fine from the pipeline's perspective, but these are failures for the users.
 
 ### How We Detect It
 
-We implement three complementary approaches:
+We use three complementary approaches:
 
 #### 1. `on-run-end` row count validation
 
@@ -168,7 +156,6 @@ dbt run          # on-run-start checks sources; on-run-end checks row counts
 dbt test         # runs all generic + singular tests
 
 # Standalone checks
-dbt source freshness                          # dbt native staleness check
-python scripts/check_source_arrival.py        # pre-flight: missing tables
-python scripts/check_source_freshness.py      # pre-flight: stale data
+dbt source freshness                          # source staleness
+python scripts/check_source_freshness.py      # pre-flight with mock alerting
 ```
