@@ -1,6 +1,6 @@
 # Runs the full dbt production pipeline every morning at 06:00 UTC.
-# Pre-flight checks (source arrival and freshness) gate the dbt build:
-# if data hasn't landed or is stale the run aborts before touching BigQuery.
+# Pre-flight checks (source arrival and freshness) gate the dbt build.
+# That is to say if data hasn't landed (no source data) or is stale the run aborts before touching BigQuery.
 # dbt itself runs inside the dbt-runner Docker image (built by docker_build.yml)
 # so the environment is identical to what was tested at image build time.
 name: dbt daily run
