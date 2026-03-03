@@ -8,7 +8,7 @@ renamed as (
         PATIENT_ID                          as patient_id,
         cast(NOTE_DATETIME as TIMESTAMP)    as note_datetime,
         NOTE_TYPE                           as note_type,
-        NOTE_TEXT                            as note_text
+        NOTE_TEXT                           as note_text
     from source
 )
 
