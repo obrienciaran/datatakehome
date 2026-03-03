@@ -25,6 +25,10 @@ Any PR touching `dbt/**` triggers two jobs. First, `dbt parse` runs as a compile
 
 A scheduled GitHub Actions run fires at 06:00 UTC each morning. Before `dbt build` can run, two Python pre-flight scripts check that all expected source tables exist and that their data is recent. `dbt source freshness` is also run, which checks the `encounters` table using the `START` column as a proxy for when data was loaded (there is no dedicated `loaded_at` column in the raw data) — it warns if the most recent encounter is older than 48 hours and errors if older than 7 days. Only once all checks pass does `dbt build` execute. This satisfies C1 and C2 in `Part C`, see [here](https://github.com/obrienciaran/datatakehome/tree/main/dbt).
 
+<img width="1519" height="843" alt="Screenshot 2026-03-03 at 17 18 14" src="https://github.com/user-attachments/assets/bfa055d4-a1db-4063-b9fd-6c86efaa9289" />
+
+*Note: correctly failing due to data being very old and failing freshness tests.*
+
 Table level and column level documentation has been added. Column level tests have been added.
 
 See [`notebooks/readme.md`](notebooks/readme.md) for the written answers to `B1` and `B2`, and [`notebooks/data_quality_assessment.ipynb`](notebooks/data_quality_assessment.ipynb) for the full exploratory analysis
