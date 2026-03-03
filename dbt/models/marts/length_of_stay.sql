@@ -1,3 +1,6 @@
+-- Calculates the length of stay in hours for each encounter, derived from the difference
+-- between encounter_start and encounter_stop. Only encounters with a recorded stop time are included.
+
 with encounters as (
     select
         *,

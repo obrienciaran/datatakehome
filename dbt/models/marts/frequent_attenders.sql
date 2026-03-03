@@ -1,3 +1,7 @@
+-- This model is NOT unique at the patient level. Each row represents a single ED encounter,
+-- so a patient with 50 attendances will have 50 rows. A patient is considered a frequent
+-- attender if they have 3 or more visits within a rolling 12-month window (is_frequent_attender = true).
+
 with encounters as (
     select *
     from (
