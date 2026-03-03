@@ -16,6 +16,8 @@ The daily production run is containerised in Docker for reproducibility. A pinne
 
 Any PR touching `dbt/**` triggers two jobs. First, `dbt parse` runs as a compile check to catch syntax errors early. If that passes, `dbt build` (models + tests) runs against an isolated, ephemeral BigQuery dataset named after the PR number (e.g. `ci_pr_42`). To keep CI fast and cost-effective as the pipeline scales, the built-in dbt `source()` macro is overridden to apply `TABLESAMPLE SYSTEM (1 PERCENT)` when `target == ci` — giving a representative random sample transparently, without any changes needed in the staging models themselves. The dataset is torn down once the job completes, regardless of outcome. This ensures broken models and failing tests are caught before merging.
 
+<img width="980" height="160" alt="Screenshot 2026-03-03 at 17 00 02" src="https://github.com/user-attachments/assets/4f8782ce-9b14-47cf-abb3-d8cde4dbb4cb" />
+
 **Daily cron job:** 
 
 A scheduled GitHub Actions run fires at 06:00 UTC each morning. Before `dbt build` can run, two Python pre-flight scripts check that all expected source tables exist and that their data is recent. `dbt source freshness` is also run, which checks the `encounters` table using the `START` column as a proxy for when data was loaded (there is no dedicated `loaded_at` column in the raw data) — it warns if the most recent encounter is older than 48 hours and errors if older than 7 days. Only once all checks pass does `dbt build` execute. This satisfies C1 and C2 in `Part C`, see [here](https://github.com/obrienciaran/datatakehome/tree/main/dbt).
