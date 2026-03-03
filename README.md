@@ -8,7 +8,7 @@ Examine `load`. Data is loaded from the repo and uploaded to Big Query using Pyt
 
 ### Part B Data Assessment
 
-Examine `dbt`. The raw data is used as a `source` for DBT and loaded from the repo. Some simple cleaning is applied in the `staging` layer. Two `mart` layer tables as requested in Part C are created.
+Examine `dbt`. The raw data is used as a `source` for dbt and loaded from the repo. Some simple cleaning is applied in the `staging` layer. Two `mart` layer tables as requested in Part C are created.
 
 The daily production run is containerised in Docker for reproducibility. A pinned image ensures the dbt version and dependencies are consistent across every run. The image is built and pushed to GitHub Container Registry (GHCR) automatically when the `Dockerfile` or `requirements.txt` changes on `main`, and is pulled at runtime each morning at 06:00 with a cronjob in a Github action. Note that the CI pipeline installs dbt directly via pip and does not use Docker. A GitHub secret was created with `BigQuery Data Editor` and `BigQuery Job User` roles.
 
