@@ -8,9 +8,9 @@ Examine `load`. Data is loaded from the repo and uploaded to Big Query using Pyt
 
 ### Part B Data Assessment
 
-Examine `dbt`. The raw data is used as a `source` for DBT. Some simple cleaning is applied in the `staging` layer. Two `mart` layer tables as requested in Part C are created.
+Examine `dbt`. The raw data is loaded from the repo and used as a `source` for dbt. Some simple cleaning is applied in the `staging` layer. Two `mart` layer tables as requested in Part C are created.
 
-The DBT run is contained in Docker for reproducibility and safety, and ran daily with a cron job via Github actions at 06:00 each morning. A github secret was created with `Big Query Data Editor` and `Big Query Job User` roles. Before the build, checks for stale data and freshness are ran using Python and DBT before `dbt run` can happen. This is to satisfy C1 and C2 in `Part C`, see [here](https://github.com/obrienciaran/datatakehome/tree/main/dbt).
+The dbt run is contained in Docker for reproducibility and safety, and runs daily with a cron job via GitHub Actions at 06:00 each morning. A GitHub secret was created with `BigQuery Data Editor` and `BigQuery Job User` roles. Before the build, checks for stale data and freshness are run using Python and dbt. This is to satisfy C1 and C2 in `Part C`, see [here](https://github.com/obrienciaran/datatakehome/tree/main/dbt).
 
 Table level and column level documentation has been added. Column level tests have been added.
 
