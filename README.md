@@ -27,3 +27,5 @@ The "ED Length of Stay" and "Frequent Attenders" tables have been added as `mart
 ### Bonus
 
 Simply, the `clinical_notes.csv` is loaded from Big Query, then `Gemini-2.5-Flash-Lite` is applied to extract the `primary disorder` from the table, and the results saved back to Big Query. I used a free tier of the Gemini API and only ran 2 rows for demonstration purposes. Here I used Abstract Base Classes to ensure code consistency, and also put placeholders for future LLM work such as augmenting or synthesising data.
+
+<img width="891" height="460" alt="Screenshot 2026-03-03 at 16 17 16" src="https://github.com/user-attachments/assets/d26fca55-1aef-471e-a4f3-711080245ebf" />
