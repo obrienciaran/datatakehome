@@ -4,7 +4,7 @@ models:
   - name: length_of_stay
     description: >
       Encounter-grain table with length of stay in hours, broken down by
-      presenting condition (reason_code / reason_description). Excludes
+      presenting condition (reason_code/reason_description). Excludes
       encounters with no stop timestamp.
     columns:
       - name: encounter_id
