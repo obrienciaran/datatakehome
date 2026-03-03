@@ -53,6 +53,9 @@ jobs:
                 threads: 4
           YAML
 
+      - name: Install Python dependencies for pre-flight checks
+        run: pip install google-cloud-bigquery
+
       - name: Check source arrival
         run: python scripts/check_source_arrival.py
 
