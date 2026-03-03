@@ -18,7 +18,7 @@ Any PR touching `dbt/**` triggers two jobs. First, `dbt parse` runs as a compile
 
 **Daily cron job:** 
 
-A scheduled run fires at 06:00 UTC each morning. Before `dbt build` can run, two Python pre-flight scripts check that source data has arrived and is fresh, and `dbt source freshness` is also run. Only once all checks pass does `dbt build` execute. This satisfies C1 and C2 in `Part C`, see [here](https://github.com/obrienciaran/datatakehome/tree/main/dbt).
+A scheduled GitHub Actions run fires at 06:00 UTC each morning. Before `dbt build` can run, two Python pre-flight scripts check that all expected source tables exist and that their data is recent. `dbt source freshness` is also run, which checks the `encounters` table using the `START` column as a proxy for when data was loaded (there is no dedicated `loaded_at` column in the raw data) — it warns if the most recent encounter is older than 48 hours and errors if older than 7 days. Only once all checks pass does `dbt build` execute. This satisfies C1 and C2 in `Part C`, see [here](https://github.com/obrienciaran/datatakehome/tree/main/dbt).
 
 Table level and column level documentation has been added. Column level tests have been added.
 
@@ -26,7 +26,7 @@ See [`notebooks/readme.md`](notebooks/readme.md) for the written answers to `B1`
 
 ### Part C Transformation Pipeline
 
-The "ED Length of Stay" and "Frequent Attenders" tables have been added as `mart` layer tables. Checks for source data and silent failures have been put in place, whereby `dbt run` cannot triggered, and a (fake) Slack alert is sent.
+The "ED Length of Stay" and "Frequent Attenders" tables have been added as `mart` layer tables. Checks for source data and silent failures have been put in place as described above in Part B, whereby `dbt run` cannot be triggered, and a (fake) Slack alert is sent.
 
 ### Bonus
 
