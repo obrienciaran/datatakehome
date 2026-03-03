@@ -12,13 +12,16 @@ Examine `dbt`. The raw data is used as a `source` for dbt and loaded from the re
 
 The daily production run is containerised in Docker for reproducibility. A pinned image ensures the dbt version and dependencies are consistent across every run. The image is built and pushed to GitHub Container Registry (GHCR) automatically when the `Dockerfile` or `requirements.txt` changes on `main`, and is pulled at runtime each morning at 06:00 with a cronjob in a Github action. Note that the CI pipeline installs dbt directly via pip and does not use Docker. A GitHub secret was created for the service account with `BigQuery Data Editor` and `BigQuery Job User` roles, which are the minimum permissions required for dbt to operate. `BigQuery Job User` allows the service account to execute queries, while `BigQuery Data Editor` allows it to create and write to tables. This follows the principle of least privilege, avoiding broader roles such as `BigQuery Admin`.
 
-**CI on pull requests:** 
+**1. CI on pull requests:** 
 
 Any PR touching `dbt/**` triggers two jobs. First, `dbt parse` runs as a compile check to catch syntax errors early. If that passes, `dbt build` (models + tests) runs against an isolated, ephemeral BigQuery dataset named after the PR number (e.g. `ci_pr_42`). To keep CI fast and cost-effective as the pipeline scales, the built-in dbt `source()` macro is overridden to apply `TABLESAMPLE SYSTEM (1 PERCENT)` when `target == ci` — giving a representative random sample transparently, without any changes needed in the staging models themselves. The dataset is torn down once the job completes, regardless of outcome. This ensures broken models and failing tests are caught before merging.
 
-<img width="980" height="160" alt="Screenshot 2026-03-03 at 17 00 02" src="https://github.com/user-attachments/assets/4f8782ce-9b14-47cf-abb3-d8cde4dbb4cb" />
+<img width="906" height="270" alt="Screenshot 2026-03-03 at 17 02 39" src="https://github.com/user-attachments/assets/b4d0c789-c4ba-4cbf-9f00-aa00ea80825b" />
 
-**Daily cron job:** 
+*Note: correctly failing due to data issues.*
+
+
+**2. Daily cron job:** 
 
 A scheduled GitHub Actions run fires at 06:00 UTC each morning. Before `dbt build` can run, two Python pre-flight scripts check that all expected source tables exist and that their data is recent. `dbt source freshness` is also run, which checks the `encounters` table using the `START` column as a proxy for when data was loaded (there is no dedicated `loaded_at` column in the raw data) — it warns if the most recent encounter is older than 48 hours and errors if older than 7 days. Only once all checks pass does `dbt build` execute. This satisfies C1 and C2 in `Part C`, see [here](https://github.com/obrienciaran/datatakehome/tree/main/dbt).
 
