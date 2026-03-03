@@ -1,6 +1,6 @@
 {% macro validate_row_counts() %}
     {#
-        C2 – Silent Failure Detection (on-run-end)
+        C2: Silent Failure Detection (on-run-end)
         Checks that mart tables have non-zero row counts and are within a
         plausible ratio of the staging encounter count.  Catches silent
         failures such as broken joins that drop all rows.

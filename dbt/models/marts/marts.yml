@@ -79,3 +79,7 @@ models:
         description: True if visits_rolling_12m >= 3
         tests:
           - not_null
+          - dbt_utils.expression_is_true:
+              expression: "= (visits_rolling_12m >= 3)"
+              config:
+                severity: error

@@ -93,8 +93,6 @@ The script `scripts/check_source_freshness.py` connects to BigQuery, checks for 
 python scripts/check_source_freshness.py
 ```
 
-In production, this would be an Airflow sensor or pre-task that gates the `dbt run` step, with the mock Slack alert replaced by a real webhook call.
-
 ---
 
 ## C2: Silent Failure Detection
@@ -121,41 +119,62 @@ We use three complementary approaches:
 The macro `validate_row_counts` (in `macros/validate_row_counts.sql`) runs after every `dbt run`. It checks that each mart table:
 
 - Has **more than zero rows** (catches broken joins, empty results)
-- Has a **plausible ratio** to the staging encounter count (catches fan-outs from bad joins)
+- Has **no more than 10x** the row count of `stg_encounters` (catches fan-outs from bad joins — e.g. a missing or non-unique join key can multiply rows, so a mart with 500,000 rows against 10,000 encounters is a clear signal that a join is producing duplicate combinations)
 
 ```yaml
 on-run-end:
   - "{{ validate_row_counts() }}"
 ```
 
-#### 2. Singular test: frequent attenders exist (`tests/assert_frequent_attenders_exist.sql`)
+#### 2. Generic column test: frequent attender flag consistency (`marts.yml`)
 
-A domain-specific assertion: the `frequent_attenders` mart must contain at least one row where `is_frequent_attender = true`. If a schema change or join bug eliminated all frequent attenders, this test catches it:
+A column-level generic test that checks `is_frequent_attender` is correctly derived from `visits_rolling_12m` for every row. This test validates the derivation logic, and if any row has a mismatch, e.g. the flag says `false` but the count is 5, then DBT will return those rows and the test fails.
 
-```bash
-dbt test --select assert_frequent_attenders_exist
+```yaml
+- name: is_frequent_attender
+  tests:
+    - dbt_utils.expression_is_true:
+        expression: "= (visits_rolling_12m >= 3)"
 ```
 
 #### 3. Singular test: length of stay within bounds (`tests/assert_los_within_bounds.sql`)
 
-Checks that the **median length of stay** falls within a clinically plausible range (> 0 hours and < 720 hours / 30 days). This catches:
+Checks that the **median** length of stay falls within a clinically plausible range (> 0 hours and < 720 hours / 30 days). This catches:
 
-- Timestamp corruption (e.g., epoch milliseconds parsed as seconds → LOS of thousands of hours)
-- All-null LOS values
+- Timestamp corruption (e.g., epoch milliseconds parsed as seconds -> Length of stay of thousands of hours)
+- All-null length of stay values
 - Negative durations from swapped start/stop timestamps
 
 ```bash
 dbt test --select assert_los_within_bounds
 ```
 
-### Running All Checks
+### When Each Check Runs
+
+**Before the daily 06:00 cron job (pre-flight gates):**
+
+These run on the GitHub Actions runner *before* dbt starts. If any fail, the pipeline halts and dbt never touches BigQuery:
 
 ```bash
-# Full pipeline with built-in source and output validation
-dbt run          # on-run-start checks sources; on-run-end checks row counts
-dbt test         # runs all generic + singular tests
+python scripts/check_source_arrival.py # verifies all expected source tables exist
+python scripts/check_source_freshness.py # verifies source data is recent enough
+```
 
-# Standalone checks
-dbt source freshness                          # source staleness
-python scripts/check_source_freshness.py      # pre-flight with mock alerting
+**During `dbt build` (built into the dbt run):**
+
+```bash
+dbt build       # runs models + tests in dependency order
+```
+
+- `on-run-start`: `check_source_tables_exist()` — blocks the run if any source table is missing
+- `on-run-end`: `validate_row_counts()` — warns if any mart has 0 rows or >10x the encounter count
+- All generic tests (unique, not_null, accepted_values, expression_is_true) run after each model
+
+**On pull requests (CI):**
+
+These run in the `dbt CI` GitHub Action when a PR touches `dbt/**`:
+
+```bash
+dbt parse # validates SQL compiles (no credentials needed)
+dbt build # runs models + tests against an ephemeral CI dataset
 ```

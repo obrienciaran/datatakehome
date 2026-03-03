@@ -1,6 +1,6 @@
 {% macro check_source_tables_exist() %}
     {#
-        C1 – Source Arrival Detection
+        C1: Source Arrival Detection
         Queries INFORMATION_SCHEMA to verify every table declared in the
         'raw' source actually exists.  Called from on-run-start so that a
         missing source file blocks the entire dbt run before any model is built.
