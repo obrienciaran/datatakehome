@@ -21,8 +21,8 @@ DATASET = "raw"
 
 # Each entry: (table_name, timestamp_column, max_age_hours, is_epoch_millis)
 FRESHNESS_CHECKS = [
-    ("encounters", "START", 168, False),             # 7 days
-    ("encounters_schema_change_batch", "START", 168, True),  # epoch milliseconds
+    ("encounters", "START", 168, False), # 7 days
+    ("encounters_schema_change_batch", "START", 168, True), # epoch milliseconds
     ("conditions", "START", 168, False),
     ("observations", "DATE", 168, False),
     ("medications", "START", 168, False),

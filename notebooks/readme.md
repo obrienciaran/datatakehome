@@ -41,14 +41,14 @@ Full exploratory analysis in [`data_quality_assessment.ipynb`](data_quality_asse
 
 ### Unification Approach
 
-1. **Column alignment** — Rename `ENCOUNTER_TYPE` to `ENCOUNTERCLASS` to match the main schema. This is a straightforward rename; the values (ambulatory, wellness, inpatient, etc.) are consistent between both files.
+1. **Column alignment**: Rename `ENCOUNTER_TYPE` to `ENCOUNTERCLASS` to match the main schema. This is a straightforward rename; the values (ambulatory, wellness, inpatient, etc.) are consistent between both files.
 
-2. **Timestamp conversion** — Convert epoch milliseconds to UTC datetime: `pd.to_datetime(col, unit='ms', utc=True)` in Python, or `TIMESTAMP_MILLIS(col)` in BigQuery SQL. Negative epoch values (pre-1970 dates) are valid and convert correctly.
+2. **Timestamp conversion**: Convert epoch milliseconds to UTC datetime: `pd.to_datetime(col, unit='ms', utc=True)` in Python, or `TIMESTAMP_MILLIS(col)` in BigQuery SQL. Negative epoch values (pre-1970 dates) are valid and convert correctly.
 
-3. **Preserve the `SOURCE_SYSTEM` column** — Add `SOURCE_SYSTEM` to the unified schema and backfill the original encounters with a default value (e.g., `LEGACY` or `SYNTHEA`) so the column is always populated. This lineage is valuable for debugging and filtering.
+3. **Preserve the `SOURCE_SYSTEM` column**: Add `SOURCE_SYSTEM` to the unified schema and backfill the original encounters with a default value (e.g., `LEGACY` or `SYNTHEA`) so the column is always populated. This lineage is valuable for debugging and filtering.
 
-4. **Union the datasets** — After alignment, `UNION ALL` the two tables. The overlap window spans 1939–2020 for both sources, and 158 months have records from both, so these are not sequential batches — they overlap. Deduplication on `Id` should be applied if any IDs appear in both files.
+4. **Union the datasets**: After alignment, `UNION ALL` the two tables. The overlap window spans 1939–2020 for both sources, and 158 months have records from both, so these are not sequential batches — they overlap. Deduplication on `Id` should be applied if any IDs appear in both files.
 
-5. **Apply the same quality checks** — The batch file inherits the same validation rules (date range thresholds, duration checks, referential integrity to patients). One row in the batch has a missing `STOP` value that should be flagged.
+5. **Apply the same quality checks**: The batch file inherits the same validation rules (date range thresholds, duration checks, referential integrity to patients). One row in the batch has a missing `STOP` value that should be flagged.
 
 In a production pipeline (e.g., dbt), this would be implemented as a staging model that reads both sources, applies the column rename and timestamp cast, unions the results, and feeds into the existing encounter quality checks.
