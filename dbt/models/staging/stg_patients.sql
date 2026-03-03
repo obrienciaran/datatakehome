@@ -5,8 +5,8 @@ with source as (
 renamed as (
     select
         Id                                          as patient_id,
-        date(cast(BIRTHDATE as TIMESTAMP))            as birth_date,
-        date(cast(DEATHDATE as TIMESTAMP))            as death_date,
+        date(cast(BIRTHDATE as TIMESTAMP))          as birth_date,
+        date(cast(DEATHDATE as TIMESTAMP))          as death_date,
         SSN                                         as ssn,
         DRIVERS                                     as drivers_licence,
         PASSPORT                                    as passport_number,
