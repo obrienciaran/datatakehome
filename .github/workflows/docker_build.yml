@@ -1,3 +1,7 @@
+# Builds and publishes the dbt-runner Docker image to the GitHub Container Registry (ghcr.io).
+# This image is the shared execution environment used by the daily run and CI workflows,
+# so they don't need to reinstall dbt and its dependencies on every run.
+# Only triggers when the environment definition itself changes (Dockerfile or requirements.txt).
 name: Build dbt-runner image
 
 on:
@@ -17,17 +21,19 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
+      packages: write # needed to push to ghcr.io
 
     steps:
       - uses: actions/checkout@v4
 
+      # Authenticate with GHCR so we can push the image
       - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Build and push two tags: `latest` for convenience and the git SHA for immutable pinning
       - uses: docker/build-push-action@v5
         with:
           context: .

@@ -1,3 +1,8 @@
+# Runs the full dbt production pipeline every morning at 06:00 UTC.
+# Pre-flight checks (source arrival and freshness) gate the dbt build:
+# if data hasn't landed or is stale the run aborts before touching BigQuery.
+# dbt itself runs inside the dbt-runner Docker image (built by docker_build.yml)
+# so the environment is identical to what was tested at image build time.
 name: dbt daily run
 
 on:
@@ -17,11 +22,12 @@ jobs:
 
     permissions:
       contents: read
-      packages: read
+      packages: read # needed to pull the dbt-runner image from ghcr.io
 
     steps:
       - uses: actions/checkout@v4
 
+      # Authenticate with GHCR so we can pull the private dbt-runner image
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -29,6 +35,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Authenticate with GCP so dbt can write to BigQuery
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -37,6 +44,7 @@ jobs:
       - name: Pull dbt-runner image
         run: docker pull "$DBT_IMAGE"
 
+      # Write the production profiles.yml at runtime so credentials never touch the repo
       - name: Write production profiles.yml
         working-directory: ${{ env.DBT_PROJECT_DIR }}
         run: |
@@ -53,15 +61,18 @@ jobs:
                 threads: 4
           YAML
 
+      # Pre-flight check 1: verify source data files have arrived in GCS/BigQuery
       - name: Install Python dependencies for pre-flight checks
         run: pip install google-cloud-bigquery
 
       - name: Check source arrival
         run: python scripts/check_source_arrival.py
 
+      # Pre-flight check 2: verify source data is fresh enough to be worth running
       - name: Check source freshness
         run: python scripts/check_source_freshness.py
 
+      # Install dbt package dependencies declared in packages.yml
       - name: dbt deps
         run: |
           docker run --rm \
@@ -70,6 +81,7 @@ jobs:
             -e GOOGLE_APPLICATION_CREDENTIALS \
             "$DBT_IMAGE" deps
 
+      # Runs dbt's own source freshness check and records results to target/sources.json
       - name: dbt source freshness
         run: |
           docker run --rm \
@@ -78,6 +90,7 @@ jobs:
             -e GOOGLE_APPLICATION_CREDENTIALS \
             "$DBT_IMAGE" source freshness
 
+      # Run all models and tests against the production BigQuery dataset
       - name: dbt build (run + test)
         run: |
           docker run --rm \
