@@ -1,4 +1,6 @@
-# Data Engineering — Ciaran O'Brien - Take-Home Assessment
+# 🤖 Data Engineering — Ciaran O'Brien - Assessment
+
+Claude was used as a coding assistant throughout this project. All infrastructure and architectural decisions were my own, all code was reviewed by me, and all data was reviewed and validated by me. Back end changes in the Google Cloud Platform website were done by me when needed.
 
 ## Overview
 
@@ -40,3 +42,20 @@ The "ED Length of Stay" and "Frequent Attenders" tables have been added as `mart
 Simply, the `clinical_notes.csv` is loaded from Big Query, then `Gemini-2.5-Flash-Lite` is applied to extract the `primary disorder` from the table, and the results saved back to Big Query. I used a free tier of the Gemini API and only ran 2 rows for demonstration purposes. Here I used Abstract Base Classes to ensure code consistency, and also put placeholders for future LLM work such as augmenting or synthesising data.
 
 <img width="891" height="460" alt="Screenshot 2026-03-03 at 16 17 16" src="https://github.com/user-attachments/assets/d26fca55-1aef-471e-a4f3-711080245ebf" />
+
+### Future work
+
+- This is a dev only environment, I would also have a prod environment
+- The infra would be implemented with Terraform
+- Permissions would be given via IAM roles
+- Apply the data quality fixes identified in the EDA notebook to the staging layer
+- Add clustering and partitioning to BigQuery models (e.g. partition marts by encounter start date, cluster by patient ID) to improve query performance and reduce costs at scale
+- Switch mart models to [incremental materialisation](https://docs.getdbt.com/docs/build/incremental-models) as data volume grows
+- Add BigQuery slot usage monitoring and checks to prevent pipeline runs from exceeding reserved slot capacity or on-demand spend limits
+- Replace mock Slack alerts with real notifications (Slack webhook, or GitHub Actions alerts) so engineers are pinged when sources are missing or stale
+- Upgrade `validate_row_counts` warnings to errors (or a dedicated post-hook alert) so anomalous mart output actually fails the pipeline rather than logging silently
+- Add more tests: [dbt unit tests](https://docs.getdbt.com/docs/build/unit-tests) for edge-case transformation logic, relationship tests (`dbt_utils.relationships_where`) between staging models to catch orphaned foreign keys, and broader coverage of staging column constraints
+- Orchestrate with a dedicated tool such as Airflow or Dagster rather than GitHub Actions cron, enabling retries, backfills, dependency-aware scheduling, and better observability
+- Add a hosted dbt docs site (e.g. `dbt docs generate` + GitHub Pages) for discoverability by analysts
+- Add data observability tooling anomaly detection beyond "point-in-time" row counts
+- Integrate the LLM enrichment step into the dbt DAG (as a model or a post-hook) so it runs as part of the pipeline rather than as a standalone script

@@ -27,6 +27,18 @@ unioned as (
     select * from main_encounters
     union all
     select * from schema_change_batch
+),
+
+deduped as (
+    select
+        *,
+        row_number() over (
+            partition by encounter_id
+            order by case source_system when 'MAIN' then 0 else 1 end
+        ) as _dedup_rn
+    from unioned
 )
 
-select * from unioned
+select * except(_dedup_rn)
+from deduped
+where _dedup_rn = 1

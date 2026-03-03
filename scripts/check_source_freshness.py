@@ -19,13 +19,13 @@ from google.cloud import bigquery
 PROJECT_ID = "guys-nhs"
 DATASET = "raw"
 
-# Each entry: (table_name, timestamp_column, max_age_hours)
+# Each entry: (table_name, timestamp_column, max_age_hours, is_epoch_millis)
 FRESHNESS_CHECKS = [
-    ("encounters", "START", 168),             # 7 days
-    ("encounters_schema_change_batch", "START", 168),
-    ("conditions", "START", 168),
-    ("observations", "DATE", 168),
-    ("medications", "START", 168),
+    ("encounters", "START", 168, False),             # 7 days
+    ("encounters_schema_change_batch", "START", 168, True),  # epoch milliseconds
+    ("conditions", "START", 168, False),
+    ("observations", "DATE", 168, False),
+    ("medications", "START", 168, False),
 ]
 
 
@@ -34,9 +34,13 @@ def check_freshness(client: bigquery.Client) -> list[dict]:
     stale = []
     now = datetime.now(timezone.utc)
 
-    for table, column, max_age_hours in FRESHNESS_CHECKS:
+    for table, column, max_age_hours, is_epoch_millis in FRESHNESS_CHECKS:
+        if is_epoch_millis:
+            expr = f"MAX(TIMESTAMP_MILLIS(CAST(`{column}` AS INT64)))"
+        else:
+            expr = f"MAX(CAST(`{column}` AS TIMESTAMP))"
         query = f"""
-            SELECT MAX(CAST(`{column}` AS TIMESTAMP)) AS latest
+            SELECT {expr} AS latest
             FROM `{PROJECT_ID}`.`{DATASET}`.`{table}`
         """
         try:
@@ -102,7 +106,7 @@ def main() -> int:
         return 1
 
     print(f"OK: All {len(FRESHNESS_CHECKS)} checked source tables have fresh data.")
-    for table, _, max_age_hours in FRESHNESS_CHECKS:
+    for table, _, max_age_hours, _ in FRESHNESS_CHECKS:
         print(f"  - {table} (threshold: {max_age_hours}h)")
     return 0
 
