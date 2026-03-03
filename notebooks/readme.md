@@ -51,4 +51,4 @@ Full exploratory analysis in [`data_quality_assessment.ipynb`](data_quality_asse
 
 5. **Apply the same quality checks**: The batch file inherits the same validation rules (date range thresholds, duration checks, referential integrity to patients). One row in the batch has a missing `STOP` value that should be flagged.
 
-In a production pipeline (e.g., dbt), this would be implemented as a staging model that reads both sources, applies the column rename and timestamp cast, unions the results, and feeds into the existing encounter quality checks.
+In a production pipeline this would be implemented as a staging model that reads both sources, applies the column rename and timestamp cast, unions the results, and feeds into the existing encounter quality checks.
